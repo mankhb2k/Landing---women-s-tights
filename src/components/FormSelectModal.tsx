@@ -1,29 +1,53 @@
-"use client";
+'use client';
 import { useCart } from "@/lib/store/useCart";
 import { Minus, Plus, X } from "lucide-react";
+import { useState } from 'react';
 
 export default function FormSelectModal() {
   const {
     isOpen,
     closeSelectModal,
-    size,
-    setSize,
     addToCart,
-    quantity,
-    setQuantity,
   } = useCart();
+
+  // State cục bộ cho modal
+  const [size, setSize] = useState('M');
+  const [quantity, setQuantity] = useState(1);
 
   if (!isOpen) return null;
 
   const PRICE_PER_UNIT = 199000;
+  const productName = "Quần tất nữ siêu hot"; // Giả sử tên sản phẩm
+  const productImage = "/images/product-1.jpg"; // Giả sử ảnh sản phẩm
+
   const totalPrice = (PRICE_PER_UNIT * quantity).toLocaleString("vi-VN");
+
+  const handleAddToCart = () => {
+    addToCart({
+      name: productName,
+      image: productImage,
+      size: size,
+      price: PRICE_PER_UNIT,
+      quantityToAdd: quantity,
+    });
+    // Reset state cục bộ và đóng modal
+    setQuantity(1);
+    setSize('M');
+    closeSelectModal();
+  };
+
+  const handleClose = () => {
+    setQuantity(1);
+    setSize('M');
+    closeSelectModal();
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/50 backdrop-blur-sm">
       <div className="animate-slide-up relative w-full rounded-t-3xl bg-white p-6 shadow-2xl">
         {/* Close Button */}
         <button
-          onClick={closeSelectModal}
+          onClick={handleClose}
           className="absolute top-4 right-4 rounded-full bg-gray-100 p-2 text-gray-500 transition hover:bg-gray-200 hover:text-gray-700"
         >
           <X size={20} />
@@ -83,7 +107,7 @@ export default function FormSelectModal() {
             <p className="text-2xl font-bold text-orange-600">{totalPrice}đ</p>
           </div>
           <button
-            onClick={addToCart}
+            onClick={handleAddToCart}
             className="w-full rounded-full bg-black from-orange-500 to-red-500 py-4 text-center font-bold text-white shadow-lg transition-transform duration-300 hover:scale-105 active:scale-100"
           >
             Xác nhận

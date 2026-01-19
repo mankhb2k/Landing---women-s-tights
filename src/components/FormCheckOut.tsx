@@ -1,10 +1,10 @@
-"use client";
+'use client';
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { z } from "zod";
 import { CheckoutSchema, CheckoutInput } from "@/lib/schema";
-import { useCart } from "@/lib/store/useCart";
-import { FormCheck } from "@/components/FormCheck";
+import { useCart, useCartTotalPrice } from "@/lib/store/useCart";
+import FormCheck from "@/components/FormCheck"; // Cập nhật FormCheck để nhận cartItems
 
 export default function FormCheckout({
   isOpen,
@@ -14,16 +14,16 @@ export default function FormCheckout({
   onClose: () => void;
 }) {
   const supabase = createClient();
-  const { size } = useCart();
+  // Lấy dữ liệu từ store giỏ hàng mới
+  const { cartItems, clearCart } = useCart();
+  const totalPrice = useCartTotalPrice();
 
-  // Quản lý dữ liệu input
   const [formData, setFormData] = useState<CheckoutInput>({
     fullName: "",
     phoneNumber: "",
     address: "",
   });
 
-  // Quản lý lỗi từ Zod
   const [errors, setErrors] = useState<
     Partial<Record<keyof CheckoutInput, string>>
   >({});
@@ -34,7 +34,6 @@ export default function FormCheckout({
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Xóa lỗi của trường đó khi người dùng bắt đầu gõ lại
     if (errors[name as keyof CheckoutInput]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -44,11 +43,9 @@ export default function FormCheckout({
     e.preventDefault();
     setLoading(true);
 
-    // 1. Validate bằng Zod
     const result = CheckoutSchema.safeParse(formData);
 
     if (!result.success) {
-      // Chuyển đổi lỗi của Zod thành object dễ dùng
       const fieldErrors: Partial<Record<keyof CheckoutInput, string>> = {};
       result.error.issues.forEach((err: z.ZodIssue) => {
         const fieldName = err.path[0] as keyof CheckoutInput;
@@ -61,14 +58,20 @@ export default function FormCheckout({
       return;
     }
 
-    // 2. Nếu validate thành công, gửi lên Supabase
+    // Tạo bản tóm tắt đơn hàng
+    const orderSummary = cartItems.map(item => 
+      `${item.name} - Size: ${item.size} - SL: ${item.quantity}`
+    ).join('\n'); // Mỗi sản phẩm một dòng
+
+    // Gửi lên Supabase
     const { error } = await supabase.from("orders").insert([
       {
         full_name: formData.fullName,
         phone: formData.phoneNumber,
         address: formData.address,
-        size: size,
-        total_price: 199000,
+        order_details: orderSummary, // Lưu tóm tắt vào một cột mới
+        total_price: totalPrice,     // Lưu tổng giá trị
+        // Cột 'size' không còn cần thiết nữa
       },
     ]);
 
@@ -78,22 +81,22 @@ export default function FormCheckout({
       alert("Lỗi: " + error.message);
     } else {
       alert("🎉 Đặt hàng thành công!");
+      clearCart(); // Xóa giỏ hàng sau khi thành công
       onClose();
-      // Bạn có thể thêm logic xóa giỏ hàng ở đây
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || cartItems.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-70 flex items-end justify-center bg-black/60 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center">
       <div className="animate-slide-up w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-2xl">
         <h2 className="mb-4 text-center text-xl font-bold">
           Xác nhận đơn hàng
         </h2>
 
-        {/* Component tóm tắt đơn hàng */}
-        <FormCheck size={size} price="199.000" />
+        {/* Truyền cartItems và totalPrice vào FormCheck */}
+        <FormCheck cartItems={cartItems} totalPrice={totalPrice} />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -151,9 +154,9 @@ export default function FormCheckout({
           <button
             type="submit"
             disabled={loading}
-            className={`w-full rounded-xl py-4 font-bold text-white uppercase shadow-lg transition ${loading ? "bg-gray-400" : "bg-linear-to-r from-orange-500 to-red-600 active:scale-95"}`}
+            className={`w-full rounded-xl py-4 font-bold text-white uppercase shadow-lg transition ${loading ? "bg-gray-400" : "bg-black"}`}
           >
-            {loading ? "Đang xử lý..." : "Hoàn tất đặt hàng"}
+            {loading ? "Đang xử lý..." : `Hoàn tất - ${totalPrice.toLocaleString('vi-VN')}đ`}
           </button>
 
           <button
