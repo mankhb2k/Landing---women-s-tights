@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { z } from "zod";
 import { CheckoutSchema, CheckoutInput } from "@/lib/schema";
 import { useCart, useCartTotalPrice } from "@/lib/store/useCart";
-import FormCheck from "@/components/FormCheck"; // Cập nhật FormCheck để nhận cartItems
+import FormCheck from "@/components/FormCheck";
 
 export default function FormCheckout({
   isOpen,
@@ -71,7 +71,6 @@ export default function FormCheckout({
         address: formData.address,
         order_details: orderSummary, // Lưu tóm tắt vào một cột mới
         total_price: totalPrice,     // Lưu tổng giá trị
-        // Cột 'size' không còn cần thiết nữa
       },
     ]);
 
@@ -156,13 +155,13 @@ export default function FormCheckout({
             disabled={loading}
             className={`w-full rounded-xl py-4 font-bold text-white uppercase shadow-lg transition ${loading ? "bg-gray-400" : "bg-black"}`}
           >
-            {loading ? "Đang xử lý..." : `Hoàn tất - ${totalPrice.toLocaleString('vi-VN')}đ`}
+            {loading ? "Đang xử lý..." : `Đặt Hàng - ${totalPrice.toLocaleString('vi-VN')}đ`}
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2 text-sm text-gray-400"
+            className="w-full py-2 text-sm text-gray-400 forn-semibold"
           >
             Hủy bỏ
           </button>
